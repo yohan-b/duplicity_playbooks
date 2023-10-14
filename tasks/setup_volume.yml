@@ -1,0 +1,70 @@
+---
+- name: Create /mnt/volumes/{{ item.name }} directory if it does not exist
+  ansible.builtin.file:
+    path: "/mnt/volumes/{{ item.name }}"
+    state: directory
+    mode: '0755'
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: Create {{ item.name }} volume
+  openstack.cloud.volume:
+    state: present
+    size: "{{ item.size }}"
+    volume_type: high-speed
+    name: "{{ item.name }}"
+  environment:
+    OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+    OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
+    OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
+    OS_PROJECT_DOMAIN_NAME: "{{ OS_PROJECT_DOMAIN_NAME }}"
+    OS_TENANT_ID: "{{ OS_TENANT_ID }}"
+    OS_TENANT_NAME: "{{ OS_TENANT_NAME }}"
+    OS_USERNAME: "{{ OS_USERNAME }}"
+    OS_PASSWORD: "{{ OS_PASSWORD }}"
+    OS_REGION_NAME: "{{ OS_REGION_NAME }}"
+
+- name: Attach {{ item.name }} volume to instance
+  openstack.cloud.server_volume:
+    state: present
+    server: ovh1.scimetis.net
+    volume: "{{ item.name }}"
+  environment:
+    OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+    OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
+    OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
+    OS_PROJECT_DOMAIN_NAME: "{{ OS_PROJECT_DOMAIN_NAME }}"
+    OS_TENANT_ID: "{{ OS_TENANT_ID }}"
+    OS_TENANT_NAME: "{{ OS_TENANT_NAME }}"
+    OS_USERNAME: "{{ OS_USERNAME }}"
+    OS_PASSWORD: "{{ OS_PASSWORD }}"
+    OS_REGION_NAME: "{{ OS_REGION_NAME }}"
+  register: volume_output
+
+- name: Create a ext4 filesystem on {{ item.name }} volume
+  community.general.filesystem:
+    fstype: ext4
+    dev: "{{ volume_output.volume.attachments[0].device }}"
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: mount /mnt/volumes/{{ item.name }}
+  ansible.posix.mount:
+    path: "/mnt/volumes/{{ item.name }}"
+    src: "{{ volume_output.volume.attachments[0].device }}"
+    fstype: ext4
+    state: mounted
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: Create /mnt/volumes/{{ item.name }}/data directory if it does not exist
+  ansible.builtin.file:
+    path: "/mnt/volumes/{{ item.name }}/data"
+    state: directory
+    mode: '0755'
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true

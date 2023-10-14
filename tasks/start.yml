@@ -85,15 +85,6 @@
   delegate_to: 172.17.0.1
   become: true
 
-- name: Create /mnt/volumes/tmp_duplicity_workdir directory if it does not exist
-  ansible.builtin.file:
-    path: /mnt/volumes/tmp_duplicity_workdir
-    state: directory
-    mode: '0755'
-  remote_user: "{{ user }}"
-  delegate_to: 172.17.0.1
-  become: true
-
 - name: Set OpenStack credentials
   ansible.builtin.include_tasks: "tasks/source_vars.yml"
   with_items:
@@ -109,66 +100,13 @@
   vars:
     shell_script: /root/openrc.sh
 
-- name: Create tmp_duplicity_workdir volume
-  openstack.cloud.volume:
-    state: present
-    size: 20
-    volume_type: high-speed
-    name: tmp_duplicity_workdir
-  environment:
-    OS_AUTH_URL: "{{ OS_AUTH_URL }}"
-    OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
-    OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
-    OS_PROJECT_DOMAIN_NAME: "{{ OS_PROJECT_DOMAIN_NAME }}"
-    OS_TENANT_ID: "{{ OS_TENANT_ID }}"
-    OS_TENANT_NAME: "{{ OS_TENANT_NAME }}"
-    OS_USERNAME: "{{ OS_USERNAME }}"
-    OS_PASSWORD: "{{ OS_PASSWORD }}"
-    OS_REGION_NAME: "{{ OS_REGION_NAME }}"
-
-- name: Attach tmp_duplicity_workdir volume to instance
-  openstack.cloud.server_volume:
-    state: present
-    server: ovh1.scimetis.net
-    volume: tmp_duplicity_workdir
-  environment:
-    OS_AUTH_URL: "{{ OS_AUTH_URL }}"
-    OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
-    OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
-    OS_PROJECT_DOMAIN_NAME: "{{ OS_PROJECT_DOMAIN_NAME }}"
-    OS_TENANT_ID: "{{ OS_TENANT_ID }}"
-    OS_TENANT_NAME: "{{ OS_TENANT_NAME }}"
-    OS_USERNAME: "{{ OS_USERNAME }}"
-    OS_PASSWORD: "{{ OS_PASSWORD }}"
-    OS_REGION_NAME: "{{ OS_REGION_NAME }}"
-  register: volume_output
-
-- name: Create a ext4 filesystem on tmp_duplicity_workdir volume
-  community.general.filesystem:
-    fstype: ext4
-    dev: "{{ volume_output.volume.attachments[0].device }}"
-  remote_user: "{{ user }}"
-  delegate_to: 172.17.0.1
-  become: true
-
-- name: mount /mnt/volumes/tmp_duplicity_workdir
-  ansible.posix.mount:
-    path: /mnt/volumes/tmp_duplicity_workdir
-    src: "{{ volume_output.volume.attachments[0].device }}"
-    fstype: ext4
-    state: mounted
-  remote_user: "{{ user }}"
-  delegate_to: 172.17.0.1
-  become: true
-
-- name: Create /mnt/volumes/tmp_duplicity_workdir/data directory if it does not exist
-  ansible.builtin.file:
-    path: /mnt/volumes/tmp_duplicity_workdir/data
-    state: directory
-    mode: '0755'
-  remote_user: "{{ user }}"
-  delegate_to: 172.17.0.1
-  become: true
+- name: Setup volume
+  ansible.builtin.include_tasks: "tasks/setup_volume.yml"
+  with_items:
+    - name: tmp_duplicity_workdir
+      size: 20
+    - name: duplicity_cache
+      size: 5
 
 #cd $SCRIPTPATH
 #source vars
@@ -177,20 +115,6 @@
 #sudo chown root:root mail_credentials.json
 #sudo chown $USER:$USER nextcloud_password.sh
 #sudo chmod 400 nextcloud_password.sh mail_credentials.json
-
-#VOLUME=duplicity_cache
-#sudo mkdir -p /mnt/volumes/${VOLUME}
-#if ! mountpoint -q /mnt/volumes/${VOLUME}
-#then
-#     ~/env_py3/bin/openstack volume create ${VOLUME} --size 5 --type high-speed
-#     VOLUME_ID=$(~/env_py3/bin/openstack volume show ${VOLUME} -c id --format value)
-#     test -e /dev/disk/by-id/*${VOLUME_ID:0:20} || nova volume-attach $INSTANCE_OPENSTACK $VOLUME_ID auto
-#     sleep 3
-#     sudo mount /dev/disk/by-id/*${VOLUME_ID:0:20} /mnt/volumes/${VOLUME} \
-#       || sudo mkfs.ext4 -F /dev/disk/by-id/*${VOLUME_ID:0:20}
-#     mountpoint -q /mnt/volumes/${VOLUME} || sudo mount /dev/disk/by-id/*${VOLUME_ID:0:20} /mnt/volumes/${VOLUME} || exit 1
-#     sudo mkdir -p /mnt/volumes/${VOLUME}/data
-#fi
 
 #- name: Tear down existing services
 #  community.docker.docker_compose:

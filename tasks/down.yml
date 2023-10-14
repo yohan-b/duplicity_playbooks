@@ -36,7 +36,6 @@
     OS_PASSWORD: "{{ OS_PASSWORD }}"
     OS_REGION_NAME: "{{ OS_REGION_NAME }}"
 
-
 - name: Detach tmp_duplicity_workdir volume from instance
   openstack.cloud.server_volume:
     state: absent
