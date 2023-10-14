@@ -10,4 +10,4 @@ USER=$(whoami)
 
 cd $SCRIPTPATH
 
-sudo docker run --net=host --rm -v ./id_rsa:/root/.ssh/id_rsa -v ~/repository/docker-duplicity-stack:/root/docker-duplicity-stack -v ./:/root/duplicity_playbooks -v ~/openrc.sh:/root/openrc.sh -i ansible /root/duplicity_playbooks/script.sh
+sudo docker run --net=host --rm -v id_rsa:/root/.ssh/id_rsa -v ~/repository/docker-duplicity-stack:/root/docker-duplicity-stack -v $SCRIPTPATH:/root/duplicity_playbooks -v ~/openrc.sh:/root/openrc.sh -i ansible /root/duplicity_playbooks/script.sh
