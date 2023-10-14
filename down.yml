@@ -25,13 +25,20 @@
       delegate_to: 172.17.0.1
       become: true
 
+    - name: Find volume ids for tmp_duplicity_workdir
+      openstack.cloud.volume_info:
+        name: tmp_duplicity_workdir
+      register: output_tmp_duplicity_workdir_info
+
     - name: Detach tmp_duplicity_workdir volume from instance
       openstack.cloud.server_volume:
         state: absent
         server: ovh1.scimetis.net
-        volume: tmp_duplicity_workdir
+        volume: "{{ item.id }}"
       register: output
       failed_when: output is failed and output.msg != "No Volume found for tmp_duplicity_workdir"
+      with_items:
+        - output_tmp_duplicity_workdir_info
 
     - name: remove tmp_duplicity_workdir volume
       openstack.cloud.volume:
