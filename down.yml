@@ -1,0 +1,39 @@
+---
+- name: Shutdown duplicity
+  hosts: localhost
+  gather_facts: false
+  tasks: 
+    - name: Tear down existing services
+      community.docker.docker_compose:
+        project_src: /root/docker-duplicity-stack
+        docker_host: tcp://127.0.0.1:2375
+        state: absent
+
+    - name: unmount /mnt/cloud
+      ansible.posix.mount:
+        path: /mnt/cloud
+        state: unmounted
+      remote_user: centos
+      delegate_to: 172.17.0.1
+      become: true
+
+    - name: unmount /mnt/volumes/tmp_duplicity_workdir
+      ansible.posix.mount:
+        path: /mnt/volumes/tmp_duplicity_workdir
+        state: unmounted
+      remote_user: centos
+      delegate_to: 172.17.0.1
+      become: true
+
+    - name: Detach tmp_duplicity_workdir volume from instance
+      openstack.cloud.server_volume:
+        state: absent
+        server: ovh1.scimetis.net
+        volume: tmp_duplicity_workdir
+      register: output
+      failed_when: output is failed and output.msg != "No Volume found for tmp_duplicity_workdir"
+
+    - name: remove tmp_duplicity_workdir volume
+      openstack.cloud.volume:
+        state: absent
+        name: tmp_duplicity_workdir
