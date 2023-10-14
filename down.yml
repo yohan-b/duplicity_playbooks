@@ -38,9 +38,11 @@
       register: output
       failed_when: output is failed and output.msg != "No Volume found for tmp_duplicity_workdir"
       with_items:
-        - output_tmp_duplicity_workdir_info
+        - "{{ output_tmp_duplicity_workdir_info.volumes }}"
 
     - name: remove tmp_duplicity_workdir volume
       openstack.cloud.volume:
         state: absent
-        name: tmp_duplicity_workdir
+        name: "{{ item.id }}"
+      with_items:
+        - "{{ output_tmp_duplicity_workdir_info.volumes }}"
