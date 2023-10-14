@@ -1,0 +1,200 @@
+---
+- name: Assert KEY variable is set
+  ansible.builtin.assert:
+    that:
+      - KEY | length > 0
+    msg: "KEY environment variable must be set"
+
+- name: Assert SECRETS_ARCHIVE_PASSPHRASE variable is set
+  ansible.builtin.assert:
+    that:
+      - lookup('env','SECRETS_ARCHIVE_PASSPHRASE') | length > 0
+    msg: "SECRETS_ARCHIVE_PASSPHRASE environment variable must be set"
+
+- name: Download secrets.tar.gz.enc
+  ansible.builtin.get_url:
+    url: "https://{{ CLOUD_SERVER }}/s/{{ KEY }}/download?path=%2F&files=secrets.tar.gz.enc"
+    dest: /root/secrets.tar.gz.enc
+
+- name: Create /root/.ssh directory
+  ansible.builtin.file:
+    path: /root/.ssh
+    state: directory
+    mode: '0700'
+
+- name: Extract from secrets.tar.gz.enc
+  shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in /root/secrets.tar.gz.enc | tar -zxv -C {{ item.dir }} --strip 2 {{ item.name }}"
+  with_items:
+    - name: secrets/docker-duplicity-stack/mail_credentials.json
+      dir: /root
+    - name: secrets/bootstrap/id_rsa
+      dir: /root/.ssh
+    - name: secrets/docker-duplicity-stack/nextcloud_password.sh
+      dir: /root
+    - name: secrets/bootstrap/openrc.sh
+      dir: /root
+
+- name: Change SSH private key permissions
+  ansible.builtin.file:
+    path: /root/.ssh/id_rsa
+    mode: '0400'
+
+- name: Set Nextcloud credentials
+  ansible.builtin.include_tasks: "tasks/source_vars.yml"
+  with_items:
+    - NEXTCLOUD_USER
+    - NEXTCLOUD_PASSWORD
+  vars:
+    shell_script: /root/nextcloud_password.sh
+
+- name: Create /mnt/cloud directory if it does not exist
+  ansible.builtin.file:
+    path: /mnt/cloud
+    state: directory
+    mode: '0755'
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: Create /etc/davfs2 directory
+  ansible.builtin.file:
+    path: /etc/davfs2
+    state: directory
+    mode: '0755'
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: Copy using inline content
+  ansible.builtin.copy:
+    content: '/mnt/cloud {{  NEXTCLOUD_USER }} {{ NEXTCLOUD_PASSWORD }}'
+    dest: /etc/davfs2/secrets
+    mode: '0600'
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: mount /mnt/cloud
+  ansible.posix.mount:
+    path: /mnt/cloud
+    src: "https://{{ CLOUD_SERVER }}/remote.php/webdav/"
+    fstype: davfs
+    opts: "uid={{ user }},gid={{ user }}"
+    state: mounted
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: Create /mnt/volumes/tmp_duplicity_workdir directory if it does not exist
+  ansible.builtin.file:
+    path: /mnt/volumes/tmp_duplicity_workdir
+    state: directory
+    mode: '0755'
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: Set OpenStack credentials
+  ansible.builtin.include_tasks: "tasks/source_vars.yml"
+  with_items:
+    - OS_AUTH_URL
+    - OS_IDENTITY_API_VERSION
+    - OS_USER_DOMAIN_NAME
+    - OS_PROJECT_DOMAIN_NAME
+    - OS_TENANT_ID
+    - OS_TENANT_NAME
+    - OS_USERNAME
+    - OS_PASSWORD
+    - OS_REGION_NAME
+  vars:
+    shell_script: /root/openrc.sh
+
+- name: Create tmp_duplicity_workdir volume
+  openstack.cloud.volume:
+    state: present
+    size: 20
+    volume_type: high-speed
+    name: tmp_duplicity_workdir
+  environment:
+    OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+    OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
+    OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
+    OS_PROJECT_DOMAIN_NAME: "{{ OS_PROJECT_DOMAIN_NAME }}"
+    OS_TENANT_ID: "{{ OS_TENANT_ID }}"
+    OS_TENANT_NAME: "{{ OS_TENANT_NAME }}"
+    OS_USERNAME: "{{ OS_USERNAME }}"
+    OS_PASSWORD: "{{ OS_PASSWORD }}"
+    OS_REGION_NAME: "{{ OS_REGION_NAME }}"
+
+- name: Attach tmp_duplicity_workdir volume to instance
+  openstack.cloud.server_volume:
+    state: present
+    server: ovh1.scimetis.net
+    volume: tmp_duplicity_workdir
+  environment:
+    OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+    OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
+    OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
+    OS_PROJECT_DOMAIN_NAME: "{{ OS_PROJECT_DOMAIN_NAME }}"
+    OS_TENANT_ID: "{{ OS_TENANT_ID }}"
+    OS_TENANT_NAME: "{{ OS_TENANT_NAME }}"
+    OS_USERNAME: "{{ OS_USERNAME }}"
+    OS_PASSWORD: "{{ OS_PASSWORD }}"
+    OS_REGION_NAME: "{{ OS_REGION_NAME }}"
+  register: volume_output
+
+- name: Create a ext4 filesystem on tmp_duplicity_workdir volume
+  community.general.filesystem:
+    fstype: ext4
+    dev: "{{ volume_output.volume.attachments[0].device }}"
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: mount /mnt/volumes/tmp_duplicity_workdir
+  ansible.posix.mount:
+    path: /mnt/volumes/tmp_duplicity_workdir
+    src: "{{ volume_output.volume.attachments[0].device }}"
+    fstype: ext4
+    state: mounted
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: Create /mnt/volumes/tmp_duplicity_workdir/data directory if it does not exist
+  ansible.builtin.file:
+    path: /mnt/volumes/tmp_duplicity_workdir/data
+    state: directory
+    mode: '0755'
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+#cd $SCRIPTPATH
+#source vars
+#test -z $1 || SCRIPT="$1"
+#USER=$(whoami)
+#sudo chown root:root mail_credentials.json
+#sudo chown $USER:$USER nextcloud_password.sh
+#sudo chmod 400 nextcloud_password.sh mail_credentials.json
+
+#VOLUME=duplicity_cache
+#sudo mkdir -p /mnt/volumes/${VOLUME}
+#if ! mountpoint -q /mnt/volumes/${VOLUME}
+#then
+#     ~/env_py3/bin/openstack volume create ${VOLUME} --size 5 --type high-speed
+#     VOLUME_ID=$(~/env_py3/bin/openstack volume show ${VOLUME} -c id --format value)
+#     test -e /dev/disk/by-id/*${VOLUME_ID:0:20} || nova volume-attach $INSTANCE_OPENSTACK $VOLUME_ID auto
+#     sleep 3
+#     sudo mount /dev/disk/by-id/*${VOLUME_ID:0:20} /mnt/volumes/${VOLUME} \
+#       || sudo mkfs.ext4 -F /dev/disk/by-id/*${VOLUME_ID:0:20}
+#     mountpoint -q /mnt/volumes/${VOLUME} || sudo mount /dev/disk/by-id/*${VOLUME_ID:0:20} /mnt/volumes/${VOLUME} || exit 1
+#     sudo mkdir -p /mnt/volumes/${VOLUME}/data
+#fi
+
+#- name: Tear down existing services
+#  community.docker.docker_compose:
+#    project_src: /root/docker-duplicity-stack
+#    docker_host: tcp://127.0.0.1:2375
+#    state: absent
+#

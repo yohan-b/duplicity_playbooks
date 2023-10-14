@@ -1,0 +1,11 @@
+---
+- name: duplicity backup
+  hosts: localhost
+  gather_facts: false
+  vars_files: main.yml
+  tasks: 
+    - name: Include start.yml
+      ansible.builtin.include_tasks: "tasks/start.yml"
+
+    - name: Include down.yml
+      ansible.builtin.include_tasks: "tasks/down.yml"

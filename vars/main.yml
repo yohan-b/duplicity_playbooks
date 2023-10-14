@@ -1,0 +1,5 @@
+user: centos
+CLOUD_SERVER: cloud.scimetis.net
+GIT_SERVER: git.scimetis.net
+KEY: "{{ lookup('env','KEY') }}"
+

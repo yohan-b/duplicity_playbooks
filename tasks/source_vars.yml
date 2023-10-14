@@ -1,0 +1,8 @@
+---
+- name: Register variable {{ item }}
+  shell: . {{ shell_script }} && echo ${{ item }}
+  register: output_var
+
+- name: Set variable {{ item }}
+  set_fact:
+    "{{ item }}": "{{ output_var.stdout }}"

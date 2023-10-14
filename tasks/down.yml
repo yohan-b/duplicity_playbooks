@@ -1,0 +1,76 @@
+---
+- name: Tear down existing services
+  community.docker.docker_compose:
+    project_src: /root/docker-duplicity-stack
+    docker_host: tcp://127.0.0.1:2375
+    state: absent
+
+- name: unmount /mnt/cloud
+  ansible.posix.mount:
+    path: /mnt/cloud
+    state: unmounted
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: unmount /mnt/volumes/tmp_duplicity_workdir
+  ansible.posix.mount:
+    path: /mnt/volumes/tmp_duplicity_workdir
+    state: unmounted
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: Find volume ids for tmp_duplicity_workdir
+  openstack.cloud.volume_info:
+    name: tmp_duplicity_workdir
+  register: output_tmp_duplicity_workdir_info
+  environment:
+    OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+    OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
+    OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
+    OS_PROJECT_DOMAIN_NAME: "{{ OS_PROJECT_DOMAIN_NAME }}"
+    OS_TENANT_ID: "{{ OS_TENANT_ID }}"
+    OS_TENANT_NAME: "{{ OS_TENANT_NAME }}"
+    OS_USERNAME: "{{ OS_USERNAME }}"
+    OS_PASSWORD: "{{ OS_PASSWORD }}"
+    OS_REGION_NAME: "{{ OS_REGION_NAME }}"
+
+
+- name: Detach tmp_duplicity_workdir volume from instance
+  openstack.cloud.server_volume:
+    state: absent
+    server: ovh1.scimetis.net
+    volume: "{{ item.id }}"
+  register: output
+  failed_when: output is failed and output.msg != "No Volume found for tmp_duplicity_workdir"
+  with_items:
+    - "{{ output_tmp_duplicity_workdir_info.volumes }}"
+  environment:
+    OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+    OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
+    OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
+    OS_PROJECT_DOMAIN_NAME: "{{ OS_PROJECT_DOMAIN_NAME }}"
+    OS_TENANT_ID: "{{ OS_TENANT_ID }}"
+    OS_TENANT_NAME: "{{ OS_TENANT_NAME }}"
+    OS_USERNAME: "{{ OS_USERNAME }}"
+    OS_PASSWORD: "{{ OS_PASSWORD }}"
+    OS_REGION_NAME: "{{ OS_REGION_NAME }}"
+
+- name: remove tmp_duplicity_workdir volume
+  openstack.cloud.volume:
+    state: absent
+    name: "{{ item.id }}"
+  with_items:
+    - "{{ output_tmp_duplicity_workdir_info.volumes }}"
+  environment:
+    OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+    OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
+    OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
+    OS_PROJECT_DOMAIN_NAME: "{{ OS_PROJECT_DOMAIN_NAME }}"
+    OS_TENANT_ID: "{{ OS_TENANT_ID }}"
+    OS_TENANT_NAME: "{{ OS_TENANT_NAME }}"
+    OS_USERNAME: "{{ OS_USERNAME }}"
+    OS_PASSWORD: "{{ OS_PASSWORD }}"
+    OS_REGION_NAME: "{{ OS_REGION_NAME }}"
+
