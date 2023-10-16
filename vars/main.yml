@@ -2,4 +2,8 @@ user: centos
 CLOUD_SERVER: cloud.scimetis.net
 GIT_SERVER: git.scimetis.net
 KEY: "{{ lookup('env','KEY') }}"
+DOC_KEY: "{{ lookup('env','DOC_KEY') }}"
+DUPLICITY_PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE') }}"
+SCRIPT: "{{ lookup('env','SCRIPT') }}"
+OS_SWIFT_REGION_NAME: GRA
 

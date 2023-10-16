@@ -1,11 +1,16 @@
 ---
-- name: Assert KEY variable is set
+- name: Assert extra-vars are set
   ansible.builtin.assert:
     that:
-      - KEY | length > 0
-    msg: "KEY environment variable must be set"
+      - item | length > 0
+    msg: "{{ item }} environment variable must be set"
+  with_items:
+    - KEY
+    - DOC_KEY
+    - DUPLICITY_PASSPHRASE
+    - SCRIPT
 
-- name: Assert SECRETS_ARCHIVE_PASSPHRASE variable is set
+- name: Assert SECRETS_ARCHIVE_PASSPHRASE environment variable is set
   ansible.builtin.assert:
     that:
       - lookup('env','SECRETS_ARCHIVE_PASSPHRASE') | length > 0
@@ -15,6 +20,11 @@
   ansible.builtin.get_url:
     url: "https://{{ CLOUD_SERVER }}/s/{{ KEY }}/download?path=%2F&files=secrets.tar.gz.enc"
     dest: /root/secrets.tar.gz.enc
+
+- name: Install openssh-client
+  ansible.builtin.package:
+    name: openssh-client
+    state: present
 
 - name: Create /root/.ssh directory
   ansible.builtin.file:
@@ -26,7 +36,7 @@
   shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in /root/secrets.tar.gz.enc | tar -zxv -C {{ item.dir }} --strip 2 {{ item.name }}"
   with_items:
     - name: secrets/docker-duplicity-stack/mail_credentials.json
-      dir: /root
+      dir: /root/
     - name: secrets/bootstrap/id_rsa
       dir: /root/.ssh
     - name: secrets/docker-duplicity-stack/nextcloud_password.sh
@@ -38,6 +48,36 @@
   ansible.builtin.file:
     path: /root/.ssh/id_rsa
     mode: '0400'
+
+- name: Remove docker-duplicity-stack directory
+  ansible.builtin.file:
+    path: "/home/{{ user }}/repository/docker-duplicity-stack"
+    state: absent
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: Clone docker-duplicity-stack repo
+  ansible.builtin.git:
+    repo: 'https://git.scimetis.net/yohan/docker-duplicity-stack.git'
+    dest: "/home/{{ user }}/repository/docker-duplicity-stack"
+    clone: yes
+    update: no
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: Copy files
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/home/{{ user }}/repository/docker-duplicity-stack"
+    mode: '0400'
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+  with_items:
+    - /root/mail_credentials.json
+    - /root/.ssh/id_rsa
 
 - name: Set Nextcloud credentials
   ansible.builtin.include_tasks: "tasks/source_vars.yml"
@@ -108,17 +148,119 @@
     - name: duplicity_cache
       size: 5
 
-#cd $SCRIPTPATH
-#source vars
-#test -z $1 || SCRIPT="$1"
-#USER=$(whoami)
-#sudo chown root:root mail_credentials.json
-#sudo chown $USER:$USER nextcloud_password.sh
-#sudo chmod 400 nextcloud_password.sh mail_credentials.json
+- name: Install git
+  ansible.builtin.package:
+    name: git
+    state: present
 
-#- name: Tear down existing services
+- name: Get docker-duplicity repo's last commit
+  ansible.builtin.git:
+    repo: 'https://git.scimetis.net/yohan/docker-duplicity.git'
+    clone: no
+    update: no
+  register: git
+
+- name: Set fact tag
+  set_fact:
+    tag: "{{ git.after[0:10] }}"
+
+- name: Search for image
+  community.docker.docker_image:
+    name: duplicity
+    tag: "{{ tag }}"
+    source: local
+    docker_host: tcp://127.0.0.1:2375
+  register: local_duplicity_image
+  failed_when: false
+
+- name: Create image build directory
+  ansible.builtin.file:
+    path: /root/build
+    state: directory
+  when:
+    - local_duplicity_image.msg is defined
+    - '"Cannot find the image" in local_duplicity_image.msg'
+
+- name: Clone docker-duplicity repo
+  ansible.builtin.git:
+    repo: 'https://git.scimetis.net/yohan/docker-duplicity.git'
+    dest: /root/build
+    clone: yes
+    update: no
+  when:
+    - local_duplicity_image.msg is defined
+    - '"Cannot find the image" in local_duplicity_image.msg'
+
+- name: Build duplicity image
+  community.docker.docker_image:
+    name: duplicity
+    tag: "{{ tag }}"
+    build:
+      path: /root/build/docker-duplicity
+    source: build
+    docker_host: tcp://127.0.0.1:2375
+  when:
+    - local_duplicity_image.msg is defined
+    - '"Cannot find the image" in local_duplicity_image.msg'
+
+- name: Remove image build directory
+  ansible.builtin.file:
+    path: /root/build
+    state: absent
+  when:
+    - local_duplicity_image.msg is defined
+    - '"Cannot find the image" in local_duplicity_image.msg'
+
+- name: Install jsondiff from pip
+  ansible.builtin.pip:
+    name: jsondiff
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: Start duplicity container
+  community.docker.docker_container:
+    name: duplicity
+    image: "duplicity:{{ tag }}"
+    entrypoint:
+      - "/root/entrypoint.sh"
+      - "{{ SCRIPT }}"
+    auto_remove: true
+    network_mode: host
+    working_dir: "/home/{{ user }}/repository/docker-duplicity-stack"
+    volumes:
+      - /mnt/volumes:/mnt/volumes:z
+      - /mnt/cloud:/mnt/cloud:z
+      - /home/{{ user }}/repository/docker-duplicity-stack/backup_scripts:/mnt/scripts:z
+      - /home/{{ user }}/repository/docker-duplicity-stack/entrypoint.sh:/root/entrypoint.sh:z
+      - /home/{{ user }}/repository/docker-duplicity-stack/sendmail.py:/root/sendmail.py:z
+      - /home/{{ user }}/repository/docker-duplicity-stack/mail_credentials.json:/root/mail_credentials.json:z
+      - /home/{{ user }}/repository/docker-duplicity-stack/id_rsa:/root/.ssh/id_rsa:Z
+      - /home/{{ user }}/repository/docker-duplicity-stack/config:/root/.ssh/config:Z
+    env:
+      OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+      OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
+      OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
+      OS_PROJECT_DOMAIN_NAME: "{{ OS_PROJECT_DOMAIN_NAME }}"
+      OS_TENANT_ID: "{{ OS_TENANT_ID }}"
+      OS_TENANT_NAME: "{{ OS_TENANT_NAME }}"
+      OS_USERNAME: "{{ OS_USERNAME }}"
+      OS_PASSWORD: "{{ OS_PASSWORD }}"
+      OS_REGION_NAME: "{{ OS_SWIFT_REGION_NAME }}"
+      KEY: "{{ KEY }}"
+      DOC_KEY: "{{ DOC_KEY }}"
+      SECRETS_ARCHIVE_PASSPHRASE: "{{ lookup('env','SECRETS_ARCHIVE_PASSPHRASE') }}"
+      DUPLICITY_PASSPHRASE: "{{ DUPLICITY_PASSPHRASE }}"
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+# docker_compose collection version will not work on Centos 7
+#- name: Start duplicity stack
 #  community.docker.docker_compose:
-#    project_src: /root/docker-duplicity-stack
-#    docker_host: tcp://127.0.0.1:2375
-#    state: absent
-#
+#    project_src: /home/{{ user }}/repository/docker-duplicity-stack
+#    state: present
+#  remote_user: "{{ user }}"
+#  delegate_to: 172.17.0.1
+#  become: true
+
