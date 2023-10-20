@@ -228,13 +228,24 @@
   delegate_to: 172.17.0.1
   become: true
 
+- name: Clone duplicity_playbooks repo
+  ansible.builtin.git:
+    repo: 'https://git.scimetis.net/yohan/duplicity_playbooks.git'
+    dest: "/home/{{ user }}/repository/duplicity_playbooks_temp"
+    clone: yes
+    version: dev
+    update: true
+    force: true
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+
 - name: Start duplicity container
   community.docker.docker_container:
     name: duplicity
     image: "duplicity:{{ tag }}"
     entrypoint:
       - "ansible-playbook"
-      - "gen_bootstrap.yml"
+      - "/root/duplicity_playbooks/gen_bootstrap.yml"
     output_logs: true
     detach: false
     network_mode: host
@@ -247,6 +258,7 @@
       - /home/{{ user }}/repository/docker-duplicity-stack/mail_credentials.json:/root/mail_credentials.json:z
       - /home/{{ user }}/repository/docker-duplicity-stack/id_rsa:/root/.ssh/id_rsa:Z
       - /home/{{ user }}/repository/docker-duplicity-stack/config:/root/.ssh/config:Z
+      - /home/{{ user }}/repository/duplicity_playbooks_temp:/root/duplicity_playbooks:Z
     env:
       OS_AUTH_URL: "{{ OS_AUTH_URL }}"
       OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
