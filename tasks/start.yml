@@ -176,42 +176,50 @@
 
 - name: Create image build directory
   ansible.builtin.file:
-    path: /root/build
+    path: "/home/{{ user }}/build_docker-duplicity"
     state: directory
   when:
     - local_duplicity_image.msg is defined
     - '"Cannot find the image" in local_duplicity_image.msg'
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
 
 - name: Clone docker-duplicity repo
   ansible.builtin.git:
     repo: 'https://git.scimetis.net/yohan/docker-duplicity.git'
-    dest: /root/build
+    dest: "/home/{{ user }}/build_docker-duplicity"
     clone: yes
     version: dev
     update: no
   when:
     - local_duplicity_image.msg is defined
     - '"Cannot find the image" in local_duplicity_image.msg'
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
 
 - name: Build duplicity image
   community.docker.docker_image:
     name: duplicity
     tag: "{{ tag }}"
     build:
-      path: /root/build/docker-duplicity
+      path: "/home/{{ user }}/build_docker-duplicity"
     source: build
-    docker_host: tcp://127.0.0.1:2375
   when:
     - local_duplicity_image.msg is defined
     - '"Cannot find the image" in local_duplicity_image.msg'
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
 
 - name: Remove image build directory
   ansible.builtin.file:
-    path: /root/build
+    path: "/home/{{ user }}/build_docker-duplicity"
     state: absent
   when:
     - local_duplicity_image.msg is defined
     - '"Cannot find the image" in local_duplicity_image.msg'
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
 
 - name: Install jsondiff from pip
   ansible.builtin.pip:
@@ -227,7 +235,8 @@
     entrypoint:
       - "ansible-playbook"
       - "gen_bootstrap.yml"
-    auto_remove: true
+    output_logs: true
+    detach: false
     network_mode: host
     working_dir: "/home/{{ user }}/repository/docker-duplicity-stack"
     volumes:
