@@ -158,6 +158,7 @@
     repo: 'https://git.scimetis.net/yohan/docker-duplicity.git'
     clone: no
     update: no
+    version: dev
   register: git
 
 - name: Set fact tag
@@ -186,6 +187,7 @@
     repo: 'https://git.scimetis.net/yohan/docker-duplicity.git'
     dest: /root/build
     clone: yes
+    version: dev
     update: no
   when:
     - local_duplicity_image.msg is defined
@@ -223,8 +225,8 @@
     name: duplicity
     image: "duplicity:{{ tag }}"
     entrypoint:
-      - "/root/entrypoint.sh"
-      - "{{ SCRIPT }}"
+      - "ansible-playbook"
+      - "gen_bootstrap.yml"
     auto_remove: true
     network_mode: host
     working_dir: "/home/{{ user }}/repository/docker-duplicity-stack"
@@ -232,7 +234,6 @@
       - /mnt/volumes:/mnt/volumes:z
       - /mnt/cloud:/mnt/cloud:z
       - /home/{{ user }}/repository/docker-duplicity-stack/backup_scripts:/mnt/scripts:z
-      - /home/{{ user }}/repository/docker-duplicity-stack/entrypoint.sh:/root/entrypoint.sh:z
       - /home/{{ user }}/repository/docker-duplicity-stack/sendmail.py:/root/sendmail.py:z
       - /home/{{ user }}/repository/docker-duplicity-stack/mail_credentials.json:/root/mail_credentials.json:z
       - /home/{{ user }}/repository/docker-duplicity-stack/id_rsa:/root/.ssh/id_rsa:Z
