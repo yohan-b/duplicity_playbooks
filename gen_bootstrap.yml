@@ -23,7 +23,7 @@
     - name: Download secrets.tar.gz.enc
       ansible.builtin.get_url:
         url: "https://{{ CLOUD_SERVER }}/s/{{ KEY }}/download?path=%2F&files=secrets.tar.gz.enc"
-        dest: /mnt/volumes/tmp_duplicity_workdir/data/secrets.tar.gz.enc
+        dest: "{{ WORKDIR }}/secrets.tar.gz.enc"
     
     - name: Install openssh-client
       ansible.builtin.package:
@@ -37,7 +37,7 @@
         mode: '0700'
     
     - name: Extract from secrets.tar.gz.enc
-      shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in /mnt/volumes/tmp_duplicity_workdir/data/secrets.tar.gz.enc | tar -zxv -C /mnt/volumes/tmp_duplicity_workdir/data"
+      shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in {{ WORKDIR }}/secrets.tar.gz.enc | tar -zxv -C {{ WORKDIR }}"
 
     - name: Change SSH private key permissions
       ansible.builtin.file:
@@ -47,22 +47,22 @@
     - name: Retrieve documentation
       ansible.builtin.get_url:
         url: "https://{{ CLOUD_SERVER }}/s/{{ DOC_KEY }}/download"
-        dest: /mnt/volumes/tmp_duplicity_workdir/data/Documentation.md
+        dest: "{{ WORKDIR }}/Documentation.md"
 
     - name: Copy new documentation
       ansible.builtin.copy:
-        src: /mnt/volumes/tmp_duplicity_workdir/data/Documentation.md
-        dest: /mnt/volumes/tmp_duplicity_workdir/data/secrets/bootstrap/Documentation.md
+        src: "{{ WORKDIR }}/Documentation.md"
+        dest: "{{ WORKDIR }}/secrets/bootstrap/Documentation.md"
       register: copy_output
 
     - name: Create secrets.tar.gz.enc
-      shell: "tar -czvpf - -C /mnt/volumes/tmp_duplicity_workdir/data secrets | openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -salt -out /mnt/volumes/tmp_duplicity_workdir/data/secrets.tar.gz.enc"
+      shell: "tar -czvpf - -C {{ WORKDIR }} secrets | openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -salt -out {{ WORKDIR }}/secrets.tar.gz.enc"
       when: copy_output is changed
 
     - name: Copy mail content
       ansible.builtin.copy:
         content: "Secrets archive has changed. New file attached."
-        dest: /mnt/volumes/tmp_duplicity_workdir/data/mail
+        dest: "{{ WORKDIR }}/mail"
       when: copy_output is changed
 
     - name: Install python2
@@ -71,12 +71,52 @@
         state: present
 
     - name: Send mail with new secrets
-      ansible.builtin.command: /root/sendmail.py -a /mnt/volumes/tmp_duplicity_workdir/data/secrets.tar.gz.enc /mnt/volumes/tmp_duplicity_workdir/data/mail /root/mail_credentials.json
+      ansible.builtin.command: "/root/sendmail.py -a {{ WORKDIR }}/secrets.tar.gz.enc {{ WORKDIR }}/mail /root/mail_credentials.json"
       when: copy_output is changed
 
     - name: Copy new secrets in Nextcloud share
       ansible.builtin.copy:
-        src: /mnt/volumes/tmp_duplicity_workdir/data/secrets.tar.gz.enc
+        src: "{{ WORKDIR }}/secrets.tar.gz.enc"
         dest: /mnt/cloud/Passwords/secrets.tar.gz.enc
       when: copy_output is changed
+
+    - name: Create /mnt/archives_critiques/secrets directory in serveur-appart
+      ansible.builtin.file:
+        path: /mnt/archives_critiques/secrets
+        state: directory
+        owner: yohan
+        group: yohan
+      remote_user: yohan
+      remote_port: 2224
+      delegate_to: chez-yohan.scimetis.net
+      become: true
+
+    - name: Get checksum of secrets.tar.gz.enc
+      ansible.builtin.stat:
+        path: "{{ WORKDIR }}/secrets.tar.gz.enc"
+      register: stats_output
+
+    - debug: var=stats_output
+
+#FILENAME=secrets.tar.gz.enc-$(sha1sum ${DIRECTORY}/secrets.tar.gz.enc | awk -F' ' '{print $1}')
+#scp -P 2224 ${DIRECTORY}/secrets.tar.gz.enc yohan@chez-yohan.scimetis.net:/mnt/archives_critiques/secrets/$FILENAME
+#rm -rf ${DIRECTORY}/secrets* ${DIRECTORY}/Documentation.md
+#
+#for name in docker-nextcloud-stack docker-reverse-proxy-stack docker-reverse-proxy docker-gogs-stack docker-mysql-stack docker-mysql systemd-mount-cinder-volume
+#do  
+#    git clone https://git.scimetis.net/yohan/${name}.git ${DIRECTORY}/${name}
+#    tar -czf ${DIRECTORY}/${name}.tar.gz -C ${DIRECTORY} ${name}
+#    rm -rf ${DIRECTORY}/${name}
+#done
+#
+#ARCHIVE_DIR=/mnt/volumes/duplicity_cache/data
+#export SWIFT_USERNAME=$OS_USERNAME
+#export SWIFT_PASSWORD=$OS_PASSWORD
+#export SWIFT_AUTHURL=$OS_AUTH_URL
+#export SWIFT_AUTHVERSION=$OS_IDENTITY_API_VERSION
+#export SWIFT_TENANTNAME=$OS_TENANT_NAME
+#export SWIFT_REGIONNAME=$OS_REGION_NAME
+#export PASSPHRASE=$DUPLICITY_PASSPHRASE
+#duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir ${ARCHIVE_DIR} --name bootstrap --allow-source-mismatch "${DIRECTORY}" swift://bootstrap
+#duplicity remove-older-than 2M --archive-dir ${ARCHIVE_DIR} --name bootstrap --allow-source-mismatch --force swift://bootstrap
 

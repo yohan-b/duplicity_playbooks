@@ -6,4 +6,4 @@ DOC_KEY: "{{ lookup('env','DOC_KEY') }}"
 DUPLICITY_PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE') }}"
 SCRIPT: "{{ lookup('env','SCRIPT') }}"
 OS_SWIFT_REGION_NAME: GRA
-
+WORKDIR: /mnt/volumes/tmp_duplicity_workdir/data
