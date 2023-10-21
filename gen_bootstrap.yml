@@ -48,3 +48,12 @@
       ansible.builtin.get_url:
         url: "https://{{ CLOUD_SERVER }}/s/{{ DOC_KEY }}/download"
         dest: /mnt/volumes/tmp_duplicity_workdir/data/Documentation.md
+
+    - name: Copy new documentation
+      ansible.builtin.copy:
+        src: /mnt/volumes/tmp_duplicity_workdir/data/Documentation.md
+        dest: /mnt/volumes/tmp_duplicity_workdir/data/secrets/bootstrap/Documentation.md
+      register: copy_output
+
+    - debug: msg="file changed"
+      when: copy_output is changed
