@@ -2,5 +2,5 @@
 - name: Assert {{ item }} environment variable is set
   ansible.builtin.assert:
     that:
-      - lookup('env','{{ item }}') | length > 0
+      - lookup('env','' ~ item) | length > 0
     msg: "{{ item }} environment variable must be set"
