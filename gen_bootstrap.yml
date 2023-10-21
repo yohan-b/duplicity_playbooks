@@ -142,7 +142,7 @@
 
     - name: Backup with duplicity
       ansible.builtin.command: "duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir {{ ARCHIVE_DIR }} --name bootstrap --allow-source-mismatch '{{ WORKDIR }}/backup' swift://bootstrap"
-      env:
+      environment:
         SWIFT_AUTHURL: "{{ OS_AUTH_URL }}"
         SWIFT_AUTHVERSION: "{{ OS_IDENTITY_API_VERSION }}"
         SWIFT_TENANTNAME: "{{ OS_TENANT_NAME }}"
@@ -153,7 +153,7 @@
 
     - name: Clean old duplicity backups
       ansible.builtin.command: "duplicity remove-older-than 2M --archive-dir {{ ARCHIVE_DIR }} --name bootstrap --allow-source-mismatch --force swift://bootstrap"
-      env:
+      environment:
         SWIFT_AUTHURL: "{{ OS_AUTH_URL }}"
         SWIFT_AUTHVERSION: "{{ OS_IDENTITY_API_VERSION }}"
         SWIFT_TENANTNAME: "{{ OS_TENANT_NAME }}"
