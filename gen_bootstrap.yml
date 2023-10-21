@@ -146,6 +146,12 @@
         src: "{{ WORKDIR }}/secrets.tar.gz.enc"
         dest: "{{ WORKDIR }}/backup/secrets.tar.gz.enc"
 
+# python-swiftclient is a requirement of duplicity
+    - name: Install python-swiftclient
+      ansible.builtin.package:
+        name: python-swiftclient
+        state: present
+
     - name: Backup with duplicity
       ansible.builtin.command: "duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir {{ ARCHIVE_DIR }} --name bootstrap --allow-source-mismatch '{{ WORKDIR }}/backup' swift://bootstrap"
       environment:
