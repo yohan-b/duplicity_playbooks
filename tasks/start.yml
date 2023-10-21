@@ -276,6 +276,10 @@
   remote_user: "{{ user }}"
   delegate_to: 172.17.0.1
   become: true
+  register: container_output
+
+- debug:
+    msg: "{{ container_output.container.Output.split('\n') }}"
 
 # docker_compose collection version will not work on Centos 7
 #- name: Start duplicity stack
