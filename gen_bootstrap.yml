@@ -146,10 +146,10 @@
         src: "{{ WORKDIR }}/secrets.tar.gz.enc"
         dest: "{{ WORKDIR }}/backup/secrets.tar.gz.enc"
 
-# python-swiftclient is a requirement of duplicity
-    - name: Install python-swiftclient
+# python3-swiftclient is a requirement of duplicity
+    - name: Install python3-swiftclient
       ansible.builtin.package:
-        name: python-swiftclient
+        name: python3-swiftclient
         state: present
 
     - name: Backup with duplicity
