@@ -55,5 +55,23 @@
         dest: /mnt/volumes/tmp_duplicity_workdir/data/secrets/bootstrap/Documentation.md
       register: copy_output
 
-    - debug: msg="file changed"
+    - name: Create secrets.tar.gz.enc
+      shell: "tar -czvpf - -C /mnt/volumes/tmp_duplicity_workdir/data secrets | openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -salt -out /mnt/volumes/tmp_duplicity_workdir/data/secrets.tar.gz.enc"
       when: copy_output is changed
+
+    - name: Copy mail content
+      ansible.builtin.copy:
+        content: "Secrets archive has changed. New file attached."
+        dest: /mnt/volumes/tmp_duplicity_workdir/data/mail
+      when: copy_output is changed
+
+    - name: Send mail with new secrets
+      ansible.builtin.command: /root/sendmail.py -a /mnt/volumes/tmp_duplicity_workdir/data/secrets.tar.gz.enc /mnt/volumes/tmp_duplicity_workdir/data/mail /root/mail_credentials.json
+      when: copy_output is changed
+
+    - name: Copy new secrets in Nextcloud share
+      ansible.builtin.copy:
+        src: /mnt/volumes/tmp_duplicity_workdir/data/secrets.tar.gz.enc
+        dest: /mnt/cloud/Passwords/secrets.tar.gz.enc
+      when: copy_output is changed
+
