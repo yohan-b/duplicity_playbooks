@@ -20,6 +20,12 @@
           - lookup('env','SECRETS_ARCHIVE_PASSPHRASE') | length > 0
         msg: "SECRETS_ARCHIVE_PASSPHRASE environment variable must be set"
     
+    - name: Assert OS_AUTH_URL environment variable is set
+      ansible.builtin.assert:
+        that:
+          - lookup('env','OS_AUTH_URL') | length > 0
+        msg: "OS_AUTH_URL environment variable must be set"
+    
     - name: Download secrets.tar.gz.enc
       ansible.builtin.get_url:
         url: "https://{{ CLOUD_SERVER }}/s/{{ KEY }}/download?path=%2F&files=secrets.tar.gz.enc"
