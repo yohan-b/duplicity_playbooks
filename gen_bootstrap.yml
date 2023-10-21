@@ -23,7 +23,7 @@
     - name: Download secrets.tar.gz.enc
       ansible.builtin.get_url:
         url: "https://{{ CLOUD_SERVER }}/s/{{ KEY }}/download?path=%2F&files=secrets.tar.gz.enc"
-        dest: /root/secrets.tar.gz.enc
+        dest: /mnt/volumes/tmp_duplicity_workdir/data/secrets.tar.gz.enc
     
     - name: Install openssh-client
       ansible.builtin.package:
@@ -37,11 +37,14 @@
         mode: '0700'
     
     - name: Extract from secrets.tar.gz.enc
-      shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in /root/secrets.tar.gz.enc | tar -zxv -C /root/"
+      shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in /root/secrets.tar.gz.enc | tar -zxv -C /mnt/volumes/tmp_duplicity_workdir/data"
 
     - name: Change SSH private key permissions
       ansible.builtin.file:
         path: /root/.ssh/id_rsa
         mode: '0400'
 
-
+    - name: Retrieve documentation
+      ansible.builtin.get_url:
+        url: "https://{{ CLOUD_SERVER }}/s/{{ DOC_KEY }}/download"
+        dest: /mnt/volumes/tmp_duplicity_workdir/data/Documentation.md
