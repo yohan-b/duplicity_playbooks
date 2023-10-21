@@ -143,21 +143,22 @@
     - name: Backup with duplicity
       ansible.builtin.command: "duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir {{ ARCHIVE_DIR }} --name bootstrap --allow-source-mismatch '{{ WORKDIR }}/backup' swift://bootstrap"
       environment:
-        SWIFT_AUTHURL: "{{ OS_AUTH_URL }}"
-        SWIFT_AUTHVERSION: "{{ OS_IDENTITY_API_VERSION }}"
-        SWIFT_TENANTNAME: "{{ OS_TENANT_NAME }}"
-        SWIFT_USERNAME: "{{ OS_USERNAME }}"
-        SWIFT_PASSWORD: "{{ OS_PASSWORD }}"
-        SWIFT_REGION_NAME: "{{ OS_REGION_NAME }}"
-        PASSPHRASE: "{{ DUPLICITY_PASSPHRASE }}"
+        SWIFT_AUTHURL: "{{ lookup('env','OS_AUTH_URL') }}"
+        SWIFT_AUTHVERSION: "{{ lookup('env','OS_IDENTITY_API_VERSION') }}"
+        SWIFT_TENANTNAME: "{{ lookup('env','OS_TENANT_NAME') }}"
+        SWIFT_USERNAME: "{{ lookup('env','OS_USERNAME') }}"
+        SWIFT_PASSWORD: "{{ lookup('env','OS_PASSWORD') }}"
+        SWIFT_REGION_NAME: "{{ lookup('env','OS_REGION_NAME') }}"
+        PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE' }}"
 
     - name: Clean old duplicity backups
       ansible.builtin.command: "duplicity remove-older-than 2M --archive-dir {{ ARCHIVE_DIR }} --name bootstrap --allow-source-mismatch --force swift://bootstrap"
       environment:
-        SWIFT_AUTHURL: "{{ OS_AUTH_URL }}"
-        SWIFT_AUTHVERSION: "{{ OS_IDENTITY_API_VERSION }}"
-        SWIFT_TENANTNAME: "{{ OS_TENANT_NAME }}"
-        SWIFT_USERNAME: "{{ OS_USERNAME }}"
-        SWIFT_PASSWORD: "{{ OS_PASSWORD }}"
-        SWIFT_REGION_NAME: "{{ OS_REGION_NAME }}"
-        PASSPHRASE: "{{ DUPLICITY_PASSPHRASE }}"
+        SWIFT_AUTHURL: "{{ lookup('env','OS_AUTH_URL') }}"
+        SWIFT_AUTHVERSION: "{{ lookup('env','OS_IDENTITY_API_VERSION') }}"
+        SWIFT_TENANTNAME: "{{ lookup('env','OS_TENANT_NAME') }}"
+        SWIFT_USERNAME: "{{ lookup('env','OS_USERNAME') }}"
+        SWIFT_PASSWORD: "{{ lookup('env','OS_PASSWORD') }}"
+        SWIFT_REGION_NAME: "{{ lookup('env','OS_REGION_NAME') }}"
+        PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE' }}"
+
