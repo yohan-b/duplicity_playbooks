@@ -87,7 +87,8 @@
         owner: yohan
         group: yohan
       remote_user: yohan
-      remote_port: 2224
+      vars:
+        ansible_ssh_port: 2224
       delegate_to: chez-yohan.scimetis.net
       become: true
 
