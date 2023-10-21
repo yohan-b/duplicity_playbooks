@@ -62,7 +62,7 @@
     repo: 'https://{{ GIT_SERVER }}/yohan/docker-duplicity-stack.git'
     dest: "/home/{{ user }}/repository/docker-duplicity-stack"
     clone: yes
-    update: no
+    force: true
   remote_user: "{{ user }}"
   delegate_to: 172.17.0.1
   become: true
@@ -190,7 +190,6 @@
     dest: "/home/{{ user }}/build_docker-duplicity"
     clone: yes
     version: dev
-    update: no
   when:
     - local_duplicity_image.msg is defined
     - '"Cannot find the image" in local_duplicity_image.msg'
@@ -234,7 +233,6 @@
     dest: "/home/{{ user }}/repository/duplicity_playbooks_temp"
     clone: yes
     version: dev
-    update: true
     force: true
   remote_user: "{{ user }}"
   delegate_to: 172.17.0.1
