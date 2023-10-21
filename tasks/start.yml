@@ -59,7 +59,7 @@
 
 - name: Clone docker-duplicity-stack repo
   ansible.builtin.git:
-    repo: 'https://git.scimetis.net/yohan/docker-duplicity-stack.git'
+    repo: 'https://{{ GIT_SERVER }}/yohan/docker-duplicity-stack.git'
     dest: "/home/{{ user }}/repository/docker-duplicity-stack"
     clone: yes
     update: no
@@ -155,7 +155,7 @@
 
 - name: Get docker-duplicity repo's last commit
   ansible.builtin.git:
-    repo: 'https://git.scimetis.net/yohan/docker-duplicity.git'
+    repo: 'https://{{ GIT_SERVER }}/yohan/docker-duplicity.git'
     clone: no
     update: no
     version: dev
@@ -186,7 +186,7 @@
 
 - name: Clone docker-duplicity repo
   ansible.builtin.git:
-    repo: 'https://git.scimetis.net/yohan/docker-duplicity.git'
+    repo: 'https://{{ GIT_SERVER }}/yohan/docker-duplicity.git'
     dest: "/home/{{ user }}/build_docker-duplicity"
     clone: yes
     version: dev
@@ -230,7 +230,7 @@
 
 - name: Clone duplicity_playbooks repo
   ansible.builtin.git:
-    repo: 'https://git.scimetis.net/yohan/duplicity_playbooks.git'
+    repo: 'https://{{ GIT_SERVER }}/yohan/duplicity_playbooks.git'
     dest: "/home/{{ user }}/repository/duplicity_playbooks_temp"
     clone: yes
     version: dev

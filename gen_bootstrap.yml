@@ -106,21 +106,58 @@
         ansible_ssh_port: 2224
       delegate_to: chez-yohan.scimetis.net
 
-#for name in docker-nextcloud-stack docker-reverse-proxy-stack docker-reverse-proxy docker-gogs-stack docker-mysql-stack docker-mysql systemd-mount-cinder-volume
-#do  
-#    git clone https://git.scimetis.net/yohan/${name}.git ${DIRECTORY}/${name}
-#    tar -czf ${DIRECTORY}/${name}.tar.gz -C ${DIRECTORY} ${name}
-#    rm -rf ${DIRECTORY}/${name}
-#done
-#
-#ARCHIVE_DIR=/mnt/volumes/duplicity_cache/data
-#export SWIFT_USERNAME=$OS_USERNAME
-#export SWIFT_PASSWORD=$OS_PASSWORD
-#export SWIFT_AUTHURL=$OS_AUTH_URL
-#export SWIFT_AUTHVERSION=$OS_IDENTITY_API_VERSION
-#export SWIFT_TENANTNAME=$OS_TENANT_NAME
-#export SWIFT_REGIONNAME=$OS_REGION_NAME
-#export PASSPHRASE=$DUPLICITY_PASSPHRASE
-#duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir ${ARCHIVE_DIR} --name bootstrap --allow-source-mismatch "${DIRECTORY}" swift://bootstrap
-#duplicity remove-older-than 2M --archive-dir ${ARCHIVE_DIR} --name bootstrap --allow-source-mismatch --force swift://bootstrap
+    - name: Clone repo
+      ansible.builtin.git:
+        repo: 'https://{{ GIT_SERVER }}/yohan/{{ item }}.git'
+        dest: "{{ WORKDIR }}/{{ item }}"
+      with_items:
+        - docker-nextcloud-stack
+        - docker-reverse-proxy-stack
+        - docker-reverse-proxy
+        - docker-gogs-stack
+        - docker-mysql-stack
+        - docker-mysql
+        - systemd-mount-cinder-volume
 
+    - name: Create backup directory
+      ansible.builtin.file:
+        path: "{{ WORKDIR }}/backup"
+        state: directory
+
+    - name: Archive Git repository
+      ansible.builtin.command: "tar -czf {{ WORKDIR }}/backup/{{ item }}.tar.gz -C {{ WORKDIR }} {{ item }}"
+      with_items:
+        - docker-nextcloud-stack
+        - docker-reverse-proxy-stack
+        - docker-reverse-proxy
+        - docker-gogs-stack
+        - docker-mysql-stack
+        - docker-mysql
+        - systemd-mount-cinder-volume
+
+    - name: Copy secrets in backup directory
+      ansible.builtin.copy:
+        src: "{{ WORKDIR }}/secrets.tar.gz.enc"
+        dest: "{{ WORKDIR }}/backup/secrets.tar.gz.enc"
+
+    - name: Backup with duplicity
+      ansible.builtin.command: "duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir {{ ARCHIVE_DIR }} --name bootstrap --allow-source-mismatch '{{ WORKDIR }}/backup' swift://bootstrap"
+      env:
+        SWIFT_AUTHURL: "{{ OS_AUTH_URL }}"
+        SWIFT_AUTHVERSION: "{{ OS_IDENTITY_API_VERSION }}"
+        SWIFT_TENANTNAME: "{{ OS_TENANT_NAME }}"
+        SWIFT_USERNAME: "{{ OS_USERNAME }}"
+        SWIFT_PASSWORD: "{{ OS_PASSWORD }}"
+        SWIFT_REGION_NAME: "{{ OS_REGION_NAME }}"
+        PASSPHRASE: "{{ DUPLICITY_PASSPHRASE }}"
+
+    - name: Clean old duplicity backups
+      ansible.builtin.command: "duplicity remove-older-than 2M --archive-dir {{ ARCHIVE_DIR }} --name bootstrap --allow-source-mismatch --force swift://bootstrap"
+      env:
+        SWIFT_AUTHURL: "{{ OS_AUTH_URL }}"
+        SWIFT_AUTHVERSION: "{{ OS_IDENTITY_API_VERSION }}"
+        SWIFT_TENANTNAME: "{{ OS_TENANT_NAME }}"
+        SWIFT_USERNAME: "{{ OS_USERNAME }}"
+        SWIFT_PASSWORD: "{{ OS_PASSWORD }}"
+        SWIFT_REGION_NAME: "{{ OS_REGION_NAME }}"
+        PASSPHRASE: "{{ DUPLICITY_PASSPHRASE }}"
