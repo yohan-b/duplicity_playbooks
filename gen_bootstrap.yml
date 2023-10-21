@@ -37,7 +37,7 @@
         mode: '0700'
     
     - name: Extract from secrets.tar.gz.enc
-      shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in /root/secrets.tar.gz.enc | tar -zxv -C /mnt/volumes/tmp_duplicity_workdir/data"
+      shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in /mnt/volumes/tmp_duplicity_workdir/data/secrets.tar.gz.enc | tar -zxv -C /mnt/volumes/tmp_duplicity_workdir/data"
 
     - name: Change SSH private key permissions
       ansible.builtin.file:
