@@ -155,7 +155,7 @@
         SWIFT_USERNAME: "{{ lookup('env','OS_USERNAME') }}"
         SWIFT_PASSWORD: "{{ lookup('env','OS_PASSWORD') }}"
         SWIFT_REGION_NAME: "{{ lookup('env','OS_REGION_NAME') }}"
-        PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE' }}"
+        PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE') }}"
 
     - name: Clean old duplicity backups
       ansible.builtin.command: "duplicity remove-older-than 2M --archive-dir {{ ARCHIVE_DIR }} --name bootstrap --allow-source-mismatch --force swift://bootstrap"
@@ -166,5 +166,5 @@
         SWIFT_USERNAME: "{{ lookup('env','OS_USERNAME') }}"
         SWIFT_PASSWORD: "{{ lookup('env','OS_PASSWORD') }}"
         SWIFT_REGION_NAME: "{{ lookup('env','OS_REGION_NAME') }}"
-        PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE' }}"
+        PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE') }}"
 
