@@ -65,6 +65,11 @@
         dest: /mnt/volumes/tmp_duplicity_workdir/data/mail
       when: copy_output is changed
 
+    - name: Install python2
+      ansible.builtin.package:
+        name: python2
+        state: present
+
     - name: Send mail with new secrets
       ansible.builtin.command: /root/sendmail.py -a /mnt/volumes/tmp_duplicity_workdir/data/secrets.tar.gz.enc /mnt/volumes/tmp_duplicity_workdir/data/mail /root/mail_credentials.json
       when: copy_output is changed
