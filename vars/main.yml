@@ -8,3 +8,31 @@ SCRIPT: "{{ lookup('env','SCRIPT') }}"
 OS_SWIFT_REGION_NAME: GRA
 WORKDIR: /mnt/volumes/tmp_duplicity_workdir/data
 ARCHIVE_DIR: /mnt/volumes/duplicity_cache/data
+BOOTSTRAP_REPOS:
+  - docker-nextcloud-stack
+  - docker-reverse-proxy-stack
+  - docker-reverse-proxy
+  - docker-gogs-stack
+  - docker-mysql-stack
+  - docker-mysql
+  - systemd-mount-cinder-volume
+BOOTSTRAP_REQUIRED_ENV_VARS:
+  - OS_AUTH_URL
+  - OS_IDENTITY_API_VERSION
+  - OS_TENANT_NAME
+  - OS_USERNAME
+  - OS_PASSWORD
+  - OS_REGION_NAME
+  - SECRETS_ARCHIVE_PASSPHRASE
+  - DUPLICITY_PASSPHRASE
+  - KEY
+  - DOC_KEY
+DUPLICITY_ENVIRONMENT:
+  SWIFT_AUTHURL: "{{ lookup('env','OS_AUTH_URL') }}"
+  SWIFT_AUTHVERSION: "{{ lookup('env','OS_IDENTITY_API_VERSION') }}"
+  SWIFT_TENANTNAME: "{{ lookup('env','OS_TENANT_NAME') }}"
+  SWIFT_USERNAME: "{{ lookup('env','OS_USERNAME') }}"
+  SWIFT_PASSWORD: "{{ lookup('env','OS_PASSWORD') }}"
+  SWIFT_REGION_NAME: "{{ lookup('env','OS_REGION_NAME') }}"
+  PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE') }}"
+

@@ -4,30 +4,13 @@
   gather_facts: false
   vars_files: main.yml
   tasks: 
-    - name: Assert extra-vars are set
-      ansible.builtin.assert:
-        that:
-          - item | length > 0
-        msg: "{{ item }} environment variable must be set"
-      with_items:
-        - KEY
-        - DOC_KEY
-    
     - name: Assert environment variable is not empty
       ansible.builtin.include_tasks: "tasks/assert_env_var_not_empty.yml"
-      with_items:
-        - OS_AUTH_URL
-        - OS_IDENTITY_API_VERSION
-        - OS_TENANT_NAME
-        - OS_USERNAME
-        - OS_PASSWORD
-        - OS_REGION_NAME
-        - SECRETS_ARCHIVE_PASSPHRASE
-        - DUPLICITY_PASSPHRASE
+      with_items: "{{ BOOTSTRAP_REQUIRED_ENV_VARS }}"
 
     - name: Download secrets.tar.gz.enc
       ansible.builtin.get_url:
-        url: "https://{{ CLOUD_SERVER }}/s/{{ KEY }}/download?path=%2F&files=secrets.tar.gz.enc"
+        url: "https://{{ CLOUD_SERVER }}/s/{{ lookup('env','KEY') }}/download?path=%2F&files=secrets.tar.gz.enc"
         dest: "{{ WORKDIR }}/secrets.tar.gz.enc"
     
     - name: Install openssh-client
@@ -51,7 +34,7 @@
 
     - name: Retrieve documentation
       ansible.builtin.get_url:
-        url: "https://{{ CLOUD_SERVER }}/s/{{ DOC_KEY }}/download"
+        url: "https://{{ CLOUD_SERVER }}/s/{{ lookup('env','DOC_KEY') }}/download"
         dest: "{{ WORKDIR }}/Documentation.md"
 
     - name: Copy new documentation
@@ -115,14 +98,7 @@
       ansible.builtin.git:
         repo: 'https://{{ GIT_SERVER }}/yohan/{{ item }}.git'
         dest: "{{ WORKDIR }}/{{ item }}"
-      with_items:
-        - docker-nextcloud-stack
-        - docker-reverse-proxy-stack
-        - docker-reverse-proxy
-        - docker-gogs-stack
-        - docker-mysql-stack
-        - docker-mysql
-        - systemd-mount-cinder-volume
+      with_items: "{{ BOOTSTRAP_REPOS }}"
 
     - name: Create backup directory
       ansible.builtin.file:
@@ -131,14 +107,7 @@
 
     - name: Archive Git repository
       ansible.builtin.command: "tar -czf {{ WORKDIR }}/backup/{{ item }}.tar.gz -C {{ WORKDIR }} {{ item }}"
-      with_items:
-        - docker-nextcloud-stack
-        - docker-reverse-proxy-stack
-        - docker-reverse-proxy
-        - docker-gogs-stack
-        - docker-mysql-stack
-        - docker-mysql
-        - systemd-mount-cinder-volume
+      with_items: "{{ BOOTSTRAP_REPOS }}"
 
     - name: Copy secrets in backup directory
       ansible.builtin.copy:
@@ -153,23 +122,8 @@
 
     - name: Backup with duplicity
       ansible.builtin.command: "duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir {{ ARCHIVE_DIR }} --name bootstrap --allow-source-mismatch '{{ WORKDIR }}/backup' swift://bootstrap"
-      environment:
-        SWIFT_AUTHURL: "{{ lookup('env','OS_AUTH_URL') }}"
-        SWIFT_AUTHVERSION: "{{ lookup('env','OS_IDENTITY_API_VERSION') }}"
-        SWIFT_TENANTNAME: "{{ lookup('env','OS_TENANT_NAME') }}"
-        SWIFT_USERNAME: "{{ lookup('env','OS_USERNAME') }}"
-        SWIFT_PASSWORD: "{{ lookup('env','OS_PASSWORD') }}"
-        SWIFT_REGION_NAME: "{{ lookup('env','OS_REGION_NAME') }}"
-        PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE') }}"
+      environment: "{{ DUPLICITY_ENVIRONMENT }}"
 
     - name: Clean old duplicity backups
       ansible.builtin.command: "duplicity remove-older-than 2M --archive-dir {{ ARCHIVE_DIR }} --name bootstrap --allow-source-mismatch --force swift://bootstrap"
-      environment:
-        SWIFT_AUTHURL: "{{ lookup('env','OS_AUTH_URL') }}"
-        SWIFT_AUTHVERSION: "{{ lookup('env','OS_IDENTITY_API_VERSION') }}"
-        SWIFT_TENANTNAME: "{{ lookup('env','OS_TENANT_NAME') }}"
-        SWIFT_USERNAME: "{{ lookup('env','OS_USERNAME') }}"
-        SWIFT_PASSWORD: "{{ lookup('env','OS_PASSWORD') }}"
-        SWIFT_REGION_NAME: "{{ lookup('env','OS_REGION_NAME') }}"
-        PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE') }}"
-
+      environment: "{{ DUPLICITY_ENVIRONMENT }}"
