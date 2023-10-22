@@ -25,16 +25,9 @@
       ansible.builtin.shell: "ls -tr /mnt/volumes/mysql-server_dumps/data/mysql_dump_*"
       register: DBs_dump
 
-    - debug: var=MySQL_dump
-    - debug: var=DBs_dump
-    - ansible.builtin.meta: end_play
-
     - name: Archive DB dumps
-      ansible.builtin.command: "tar -czf {{ WORKDIR }}/backup/mysql-server_dumps.tar.gz -C /mnt/volumes ${name_mysql_dump} ${name_dbs_dump}"
+      ansible.builtin.command: "tar -czf {{ WORKDIR }}/backup/mysql-server_dumps.tar.gz -C /mnt/volumes {{ MySQL_dump.stdout_lines | last }} {{ DBs_dump.stdout_lines | last }}"
       with_items: "{{ BACKUP_OVH1_VOLUMES }}"
-
-#name_mysql_dump=$(ls -tr ${name}/data/mysql_dump-mysql_*|tail -n1)
-#name_dbs_dump=$(ls -tr ${name}/data/mysql_dump_*|tail -n1)
 
 # python3-swiftclient is a requirement of duplicity
     - name: Install python3-swiftclient
