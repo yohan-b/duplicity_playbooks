@@ -258,6 +258,7 @@
       DOC_KEY: "{{ lookup('env','DOC_KEY') }}"
       SECRETS_ARCHIVE_PASSPHRASE: "{{ lookup('env','SECRETS_ARCHIVE_PASSPHRASE') }}"
       DUPLICITY_PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE') }}"
+      BACKUP_WORKFLOW: "{{ lookup('env','BACKUP_WORKFLOW') }}"
   remote_user: "{{ user }}"
   delegate_to: 172.17.0.1
   become: true
