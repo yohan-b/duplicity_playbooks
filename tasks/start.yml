@@ -1,24 +1,11 @@
 ---
-- name: Assert extra-vars are set
-  ansible.builtin.assert:
-    that:
-      - item | length > 0
-    msg: "{{ item }} environment variable must be set"
-  with_items:
-    - KEY
-    - DOC_KEY
-    - DUPLICITY_PASSPHRASE
-    - SCRIPT
-
-- name: Assert SECRETS_ARCHIVE_PASSPHRASE environment variable is set
-  ansible.builtin.assert:
-    that:
-      - lookup('env','SECRETS_ARCHIVE_PASSPHRASE') | length > 0
-    msg: "SECRETS_ARCHIVE_PASSPHRASE environment variable must be set"
+- name: Assert environment variable is not empty
+  ansible.builtin.include_tasks: "tasks/assert_env_var_not_empty.yml"
+  with_items: "{{ PLAYBOOK_REQUIRED_ENV_VARS }}"
 
 - name: Download secrets.tar.gz.enc
   ansible.builtin.get_url:
-    url: "https://{{ CLOUD_SERVER }}/s/{{ KEY }}/download?path=%2F&files=secrets.tar.gz.enc"
+    url: "https://{{ CLOUD_SERVER }}/s/{{ lookup('env','KEY') }}/download?path=%2F&files=secrets.tar.gz.enc"
     dest: /root/secrets.tar.gz.enc
 
 - name: Install openssh-client
@@ -267,10 +254,10 @@
       OS_USERNAME: "{{ OS_USERNAME }}"
       OS_PASSWORD: "{{ OS_PASSWORD }}"
       OS_REGION_NAME: "{{ OS_SWIFT_REGION_NAME }}"
-      KEY: "{{ KEY }}"
-      DOC_KEY: "{{ DOC_KEY }}"
+      KEY: "{{ lookup('env','KEY') }}"
+      DOC_KEY: "{{ lookup('env','DOC_KEY') }}"
       SECRETS_ARCHIVE_PASSPHRASE: "{{ lookup('env','SECRETS_ARCHIVE_PASSPHRASE') }}"
-      DUPLICITY_PASSPHRASE: "{{ DUPLICITY_PASSPHRASE }}"
+      DUPLICITY_PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE') }}"
   remote_user: "{{ user }}"
   delegate_to: 172.17.0.1
   become: true
