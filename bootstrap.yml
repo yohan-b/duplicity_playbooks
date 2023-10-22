@@ -25,7 +25,7 @@
         mode: '0700'
     
     - name: Extract required secrets from secrets.tar.gz.enc
-      shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in /root/secrets.tar.gz.enc | tar -zxv -C {{ item.dir }} --strip 2 {{ item.name }}"
+      shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in {{ WORKDIR }}/secrets.tar.gz.enc | tar -zxv -C {{ item.dir }} --strip 2 {{ item.name }}"
       with_items:
         - name: secrets/docker-duplicity-stack/mail_credentials.json
           dir: /root/
