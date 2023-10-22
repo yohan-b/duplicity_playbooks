@@ -12,19 +12,8 @@
     url: "https://{{ CLOUD_SERVER }}/s/{{ lookup('env','KEY') }}/download?path=%2F&files=secrets.tar.gz.enc"
     dest: "{{ WORKDIR }}/secrets.tar.gz.enc"
 
-- name: Create /root/.ssh directory
-  ansible.builtin.file:
-    path: /root/.ssh
-    state: directory
-    mode: '0700'
-
 - name: Extract from secrets.tar.gz.enc
   shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in {{ WORKDIR }}/secrets.tar.gz.enc | tar -zxv -C {{ WORKDIR }}"
-
-- name: Change SSH private key permissions
-  ansible.builtin.file:
-    path: /root/.ssh/id_rsa
-    mode: '0400'
 
 - name: Retrieve documentation
   ansible.builtin.get_url:
