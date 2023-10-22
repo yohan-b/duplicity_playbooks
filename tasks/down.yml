@@ -1,4 +1,26 @@
 ---
+#- name: Tear down existing services
+#  community.docker.docker_compose:
+#    project_src: /root/docker-duplicity-stack
+#    docker_host: tcp://127.0.0.1:2375
+#    state: absent
+
+- name: Stop and remove duplicity container
+  community.docker.docker_container:
+    name: duplicity
+    state: absent
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
+- name: Remove docker-duplicity-stack directory
+  ansible.builtin.file:
+    path: "/home/{{ user }}/repository/docker-duplicity-stack"
+    state: absent
+  remote_user: "{{ user }}"
+  delegate_to: 172.17.0.1
+  become: true
+
 - name: unmount /mnt/cloud
   ansible.posix.mount:
     path: /mnt/cloud

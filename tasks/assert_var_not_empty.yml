@@ -1,6 +1,0 @@
----
-- name: Assert {{ item }} variable is set
-  ansible.builtin.assert:
-    that:
-      - item | length > 0
-    msg: "{{ item }} variable must be set"
