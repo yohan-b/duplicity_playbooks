@@ -24,13 +24,36 @@
         state: directory
         mode: '0700'
     
+    - name: Extract required secrets from secrets.tar.gz.enc
+      shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in /root/secrets.tar.gz.enc | tar -zxv -C {{ item.dir }} --strip 2 {{ item.name }}"
+      with_items:
+        - name: secrets/docker-duplicity-stack/mail_credentials.json
+          dir: /root/
+        - name: secrets/bootstrap/id_rsa
+          dir: /root/.ssh
+
+    - name: Change secret file permissions
+      ansible.builtin.file:
+        path: "{{ item }}"
+        mode: '0400'
+        owner: root
+        group: root
+      with_items:
+        - /root/mail_credentials.json
+        - /root/.ssh/id_rsa
+
+    - name: Copy ssh config
+      ansible.builtin.copy:
+        src: /root/duplicity_playbooks/files/config
+        dest: /root/.ssh/config
+        mode: '0640'
+        owner: root
+        group: root
+      when: copy_output is changed
+
+    - name: Send mail with new secrets
     - name: Extract from secrets.tar.gz.enc
       shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in {{ WORKDIR }}/secrets.tar.gz.enc | tar -zxv -C {{ WORKDIR }}"
-
-    - name: Change SSH private key permissions
-      ansible.builtin.file:
-        path: /root/.ssh/id_rsa
-        mode: '0400'
 
     - name: Retrieve documentation
       ansible.builtin.get_url:
@@ -57,6 +80,14 @@
       ansible.builtin.package:
         name: python2
         state: present
+      when: copy_output is changed
+
+    - name: Copy sendmail.py
+      ansible.builtin.copy:
+        src: /root/duplicity_playbooks/files/sendmail.py
+        dest: /root/sendmail.py
+        mode: '0770'
+      when: copy_output is changed
 
     - name: Send mail with new secrets
       ansible.builtin.command: "/root/sendmail.py -a {{ WORKDIR }}/secrets.tar.gz.enc {{ WORKDIR }}/mail /root/mail_credentials.json"

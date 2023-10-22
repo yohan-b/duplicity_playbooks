@@ -22,8 +22,6 @@
 - name: Extract from secrets.tar.gz.enc
   shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in /root/secrets.tar.gz.enc | tar -zxv -C {{ item.dir }} --strip 2 {{ item.name }}"
   with_items:
-    - name: secrets/docker-duplicity-stack/mail_credentials.json
-      dir: /root/
     - name: secrets/bootstrap/id_rsa
       dir: /root/.ssh
     - name: secrets/docker-duplicity-stack/nextcloud_password.sh
@@ -35,36 +33,6 @@
   ansible.builtin.file:
     path: /root/.ssh/id_rsa
     mode: '0400'
-
-- name: Remove docker-duplicity-stack directory
-  ansible.builtin.file:
-    path: "/home/{{ user }}/repository/docker-duplicity-stack"
-    state: absent
-  remote_user: "{{ user }}"
-  delegate_to: 172.17.0.1
-  become: true
-
-- name: Clone docker-duplicity-stack repo
-  ansible.builtin.git:
-    repo: 'https://{{ GIT_SERVER }}/yohan/docker-duplicity-stack.git'
-    dest: "/home/{{ user }}/repository/docker-duplicity-stack"
-    clone: yes
-    force: true
-  remote_user: "{{ user }}"
-  delegate_to: 172.17.0.1
-  become: true
-
-- name: Copy files
-  ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "/home/{{ user }}/repository/docker-duplicity-stack"
-    mode: '0400'
-  remote_user: "{{ user }}"
-  delegate_to: 172.17.0.1
-  become: true
-  with_items:
-    - /root/mail_credentials.json
-    - /root/.ssh/id_rsa
 
 - name: Set Nextcloud credentials
   ansible.builtin.include_tasks: "tasks/source_vars.yml"
@@ -235,15 +203,9 @@
     output_logs: true
     detach: false
     network_mode: host
-    working_dir: "/home/{{ user }}/repository/docker-duplicity-stack"
     volumes:
       - /mnt/volumes:/mnt/volumes:z
       - /mnt/cloud:/mnt/cloud:z
-      - /home/{{ user }}/repository/docker-duplicity-stack/backup_scripts:/mnt/scripts:z
-      - /home/{{ user }}/repository/docker-duplicity-stack/sendmail.py:/root/sendmail.py:z
-      - /home/{{ user }}/repository/docker-duplicity-stack/mail_credentials.json:/root/mail_credentials.json:z
-      - /home/{{ user }}/repository/docker-duplicity-stack/id_rsa:/root/.ssh/id_rsa:Z
-      - /home/{{ user }}/repository/docker-duplicity-stack/config:/root/.ssh/config:Z
       - /home/{{ user }}/repository/duplicity_playbooks_temp:/root/duplicity_playbooks:Z
     env:
       OS_AUTH_URL: "{{ OS_AUTH_URL }}"
