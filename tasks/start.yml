@@ -8,13 +8,9 @@
     url: "https://{{ CLOUD_SERVER }}/s/{{ lookup('env','KEY') }}/download?path=%2F&files=secrets.tar.gz.enc"
     dest: /root/secrets.tar.gz.enc
 
-# python3-swiftclient is a requirement of duplicity
-- name: Install package requirements
+- name: Install openssh-client
   ansible.builtin.package:
-    name:
-      - git
-      - python3-swiftclient
-      - openssh-client
+    name: openssh-client
     state: present
 
 - name: Create /root/.ssh directory
@@ -118,6 +114,11 @@
     - name: duplicity_cache
       size: 5
 
+- name: Install git
+  ansible.builtin.package:
+    name: git
+    state: present
+
 - name: Install jsondiff from pip
   ansible.builtin.pip:
     name: jsondiff
@@ -125,7 +126,3 @@
   delegate_to: 172.17.0.1
   become: true
 
-- name: Create backup directory
-  ansible.builtin.file:
-    path: "{{ WORKDIR }}/backup"
-    state: directory
