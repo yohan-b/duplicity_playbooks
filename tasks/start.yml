@@ -145,7 +145,7 @@
     repo: 'https://{{ GIT_SERVER }}/yohan/docker-duplicity.git'
     clone: no
     update: no
-    version: dev
+    version: master
   register: git
 
 - name: Set fact tag
@@ -176,7 +176,7 @@
     repo: 'https://{{ GIT_SERVER }}/yohan/docker-duplicity.git'
     dest: "/home/{{ user }}/build_docker-duplicity"
     clone: yes
-    version: dev
+    version: master
   when:
     - local_duplicity_image.msg is defined
     - '"Cannot find the image" in local_duplicity_image.msg'
@@ -219,7 +219,7 @@
     repo: 'https://{{ GIT_SERVER }}/yohan/duplicity_playbooks.git'
     dest: "/home/{{ user }}/repository/duplicity_playbooks_temp"
     clone: yes
-    version: dev
+    version: master
     force: true
   remote_user: "{{ user }}"
   delegate_to: 172.17.0.1
