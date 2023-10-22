@@ -7,5 +7,17 @@
     - name: Include start.yml
       ansible.builtin.include_tasks: "tasks/start.yml"
 
+    - name: Include {{ lookup('env','BACKUP_WORKFLOW') }}.yml
+      ansible.builtin.include_tasks: "tasks/{{ lookup('env','BACKUP_WORKFLOW') }}.yml"
+      vars:
+        DUPLICITY_ENVIRONMENT:
+          SWIFT_AUTHURL: "{{ OS_AUTH_URL }}"
+          SWIFT_AUTHVERSION: "{{ OS_IDENTITY_API_VERSION }}"
+          SWIFT_TENANTNAME: "{{ OS_TENANT_NAME }}"
+          SWIFT_USERNAME: "{{ OS_USERNAME }}"
+          SWIFT_PASSWORD: "{{ OS_PASSWORD }}"
+          SWIFT_REGION_NAME: GRA
+          PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE') }}"
+
     - name: Include down.yml
       ansible.builtin.include_tasks: "tasks/down.yml"
