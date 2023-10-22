@@ -230,7 +230,7 @@
     image: "duplicity:{{ tag }}"
     entrypoint:
       - "ansible-playbook"
-      - "/root/duplicity_playbooks/gen_bootstrap.yml"
+      - "/root/duplicity_playbooks/{{ lookup('env','BACKUP_WORKFLOW') }}.yml"
     output_logs: true
     detach: false
     network_mode: host
