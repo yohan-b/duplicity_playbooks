@@ -25,6 +25,28 @@ BOOTSTRAP_REQUIRED_ENV_VARS:
   - DUPLICITY_PASSPHRASE
   - KEY
   - DOC_KEY
+  - BACKUP_WORKFLOW
+
+BACKUP_OVH1_VOLUMES:
+  - elasticsearch_data
+  - gogs_data
+  - mail_data
+  - nextcloud
+  - reverse-proxy_conf
+  - reverse-proxy_conf_enabled
+  - reverse-proxy_letsencrypt
+  - scuttle_code
+  - scuttle_php5-fpm_conf
+
+BACKUP_OVH1_REQUIRED_ENV_VARS:
+  - OS_AUTH_URL
+  - OS_IDENTITY_API_VERSION
+  - OS_TENANT_NAME
+  - OS_USERNAME
+  - OS_PASSWORD
+  - OS_REGION_NAME
+  - DUPLICITY_PASSPHRASE
+  - BACKUP_WORKFLOW
 
 PLAYBOOK_REQUIRED_ENV_VARS:
   - KEY

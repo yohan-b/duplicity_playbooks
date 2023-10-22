@@ -1,5 +1,5 @@
 ---
-- name: gen_bootstrap
+- name: backup bootstrap
   hosts: localhost
   gather_facts: false
   vars_files: main.yml
@@ -121,9 +121,9 @@
         state: present
 
     - name: Backup with duplicity
-      ansible.builtin.command: "duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir {{ ARCHIVE_DIR }} --name bootstrap --allow-source-mismatch '{{ WORKDIR }}/backup' swift://bootstrap"
+      ansible.builtin.command: "duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir {{ ARCHIVE_DIR }} --name {{ lookup('env','BACKUP_WORKFLOW') }} --allow-source-mismatch '{{ WORKDIR }}/backup' swift://{{ lookup('env','BACKUP_WORKFLOW') }}"
       environment: "{{ DUPLICITY_ENVIRONMENT }}"
 
     - name: Clean old duplicity backups
-      ansible.builtin.command: "duplicity remove-older-than 2M --archive-dir {{ ARCHIVE_DIR }} --name bootstrap --allow-source-mismatch --force swift://bootstrap"
+      ansible.builtin.command: "duplicity remove-older-than 2M --archive-dir {{ ARCHIVE_DIR }} --name {{ lookup('env','BACKUP_WORKFLOW') }} --allow-source-mismatch --force swift://{{ lookup('env','BACKUP_WORKFLOW') }}"
       environment: "{{ DUPLICITY_ENVIRONMENT }}"
