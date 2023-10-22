@@ -224,6 +224,7 @@
   remote_user: "{{ user }}"
   delegate_to: 172.17.0.1
 
+# We are forced to use another container because mounts done on the hosts after current container start will not be visible
 - name: Start duplicity container
   community.docker.docker_container:
     name: duplicity
