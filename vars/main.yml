@@ -61,6 +61,6 @@ DUPLICITY_ENVIRONMENT:
   SWIFT_TENANTNAME: "{{ lookup('env','OS_TENANT_NAME') }}"
   SWIFT_USERNAME: "{{ lookup('env','OS_USERNAME') }}"
   SWIFT_PASSWORD: "{{ lookup('env','OS_PASSWORD') }}"
-  SWIFT_REGION_NAME: "{{ lookup('env','OS_REGION_NAME') }}"
+  SWIFT_REGIONNAME: "{{ lookup('env','OS_REGION_NAME') }}"
   PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE') }}"
 
