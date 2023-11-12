@@ -18,11 +18,11 @@
       with_items: "{{ BACKUP_OVH1_VOLUMES }}"
 
     - name: Find lastest MySQL DB dump
-      ansible.builtin.shell: "ls -tr /mnt/volumes/mysql-server_dumps/data/mysql_dump-mysql_*"
+      ansible.builtin.shell: "cd /mnt/volumes; ls -tr mysql-server_dumps/data/mysql_dump-mysql_*"
       register: MySQL_dump
 
     - name: Find lastest applications DB dump
-      ansible.builtin.shell: "ls -tr /mnt/volumes/mysql-server_dumps/data/mysql_dump_*"
+      ansible.builtin.shell: "cd /mnt/volumes; ls -tr mysql-server_dumps/data/mysql_dump_*"
       register: DBs_dump
 
     - name: Archive DB dumps
