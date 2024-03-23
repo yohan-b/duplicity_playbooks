@@ -12,7 +12,6 @@ BOOTSTRAP_REPOS:
   - docker-gogs-stack
   - docker-mysql-stack
   - docker-mysql
-  - systemd-mount-cinder-volume
 
 BOOTSTRAP_REQUIRED_ENV_VARS:
   - OS_AUTH_URL
@@ -37,6 +36,10 @@ BACKUP_OVH1_VOLUMES:
   - reverse-proxy_letsencrypt
   - scuttle_code
   - scuttle_php5-fpm_conf
+  - etc_grafana
+  - var_lib_grafana
+  - var_log_grafana
+  - registry
 
 BACKUP_OVH1_REQUIRED_ENV_VARS:
   - OS_AUTH_URL
