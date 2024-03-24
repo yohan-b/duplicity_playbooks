@@ -39,7 +39,9 @@ BACKUP_OVH1_VOLUMES:
   - etc_grafana
   - var_lib_grafana
   - var_log_grafana
-  - registry
+  - registry_data
+  - registry_auth
+  - registry_certs
 
 BACKUP_OVH1_REQUIRED_ENV_VARS:
   - OS_AUTH_URL
