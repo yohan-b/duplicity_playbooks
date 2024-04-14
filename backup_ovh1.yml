@@ -13,32 +13,15 @@
         path: "{{ WORKDIR }}/backup"
         state: directory
 
-    - name: Archive volumes
-      ansible.builtin.command: "tar -czf {{ WORKDIR }}/backup/{{ item }}.tar.gz -C /mnt/volumes {{ item }}"
-      with_items: "{{ BACKUP_OVH1_VOLUMES }}"
-
-    - name: Find lastest MySQL DB dump
-      ansible.builtin.shell: "cd /mnt/volumes; ls -tr mysql-server_dumps/data/mysql_dump-mysql_*"
-      register: MySQL_dump
-
-    - name: Find lastest applications DB dump
-      ansible.builtin.shell: "cd /mnt/volumes; ls -tr mysql-server_dumps/data/mysql_dump_*"
-      register: DBs_dump
-
-    - name: Archive DB dumps
-      ansible.builtin.command: "tar -czf {{ WORKDIR }}/backup/mysql-server_dumps.tar.gz -C /mnt/volumes {{ MySQL_dump.stdout_lines | last }} {{ DBs_dump.stdout_lines | last }}"
-      with_items: "{{ BACKUP_OVH1_VOLUMES }}"
-
-# python3-swiftclient is a requirement of duplicity
+    # python3-swiftclient is a requirement of duplicity
     - name: Install python3-swiftclient
       ansible.builtin.package:
         name: python3-swiftclient
         state: present
 
-    - name: Backup with duplicity
-      ansible.builtin.command: "duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir {{ ARCHIVE_DIR }} --name {{ lookup('env','BACKUP_WORKFLOW') }} --allow-source-mismatch '{{ WORKDIR }}/backup' swift://{{ lookup('env','BACKUP_WORKFLOW') }}"
-      environment: "{{ DUPLICITY_ENVIRONMENT }}"
+    - name: Archive volume
+      ansible.builtin.include_tasks: "tasks/backup_volume.yml"
+      with_items: "{{ BACKUP_OVH1_VOLUMES }}"
 
-    - name: Clean old duplicity backups
-      ansible.builtin.command: "duplicity remove-older-than 2M --archive-dir {{ ARCHIVE_DIR }} --name {{ lookup('env','BACKUP_WORKFLOW') }} --allow-source-mismatch --force swift://{{ lookup('env','BACKUP_WORKFLOW') }}"
-      environment: "{{ DUPLICITY_ENVIRONMENT }}"
+    - name: Archive MySQL DB
+      ansible.builtin.include_tasks: "tasks/backup_mysql_db.yml"

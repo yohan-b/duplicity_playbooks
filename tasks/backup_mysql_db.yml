@@ -1,0 +1,24 @@
+---
+- name: Create backup directory
+  ansible.builtin.file:
+    path: "{{ WORKDIR }}/backup/MySQL_DB"
+    state: directory
+
+- name: Find lastest MySQL DB dump
+  ansible.builtin.shell: "cd /mnt/volumes; ls -tr mysql-server_dumps/data/mysql_dump-mysql_*"
+  register: MySQL_dump
+
+- name: Find lastest applications DB dump
+  ansible.builtin.shell: "cd /mnt/volumes; ls -tr mysql-server_dumps/data/mysql_dump_*"
+  register: DBs_dump
+
+- name: Archive DB dumps
+  ansible.builtin.command: "cp -a /mnt/volumes/{{ MySQL_dump.stdout_lines | last }} /mnt/volumes/{{ DBs_dump.stdout_lines | last }} {{ WORKDIR }}/backup/MySQL_DB/"
+
+- name: Backup with duplicity
+  ansible.builtin.command: "duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir {{ ARCHIVE_DIR }} --name MySQL_DB --allow-source-mismatch '{{ WORKDIR }}/backup/MySQL_DB' swift://{{ lookup('env','BACKUP_WORKFLOW') }}"
+  environment: "{{ DUPLICITY_ENVIRONMENT }}"
+
+- name: Clean old duplicity backups
+  ansible.builtin.command: "duplicity remove-older-than 2M --archive-dir {{ ARCHIVE_DIR }} --name MySQL_DB --allow-source-mismatch --force swift://{{ lookup('env','BACKUP_WORKFLOW') }}"
+  environment: "{{ DUPLICITY_ENVIRONMENT }}"
