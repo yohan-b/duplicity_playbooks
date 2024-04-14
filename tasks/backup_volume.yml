@@ -1,5 +1,5 @@
 ---
-- name: Find hard links
+- name: Find hard links in /mnt/volumes/{{ item }}
   ansible.builtin.command: "find '/mnt/volumes/{{ item }}' -type f -links +1"
   register: find_hard_links
 
@@ -10,10 +10,10 @@
       - find_hard_links.stdout | length == 0
     msg: "Duplicity does not support hard links."
 
-- name: Backup with duplicity
+- name: Backup /mnt/volumes/{{ item }} with duplicity
   ansible.builtin.command: "duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir {{ ARCHIVE_DIR }} --name {{ item }} --allow-source-mismatch '/mnt/volumes/{{ item }}' swift://{{ lookup('env','BACKUP_WORKFLOW') }}"
   environment: "{{ DUPLICITY_ENVIRONMENT }}"
 
-- name: Clean old duplicity backups
+- name: Clean old duplicity backups for {{ item }}
   ansible.builtin.command: "duplicity remove-older-than 2M --archive-dir {{ ARCHIVE_DIR }} --name {{ item }} --allow-source-mismatch --force swift://{{ lookup('env','BACKUP_WORKFLOW') }}"
   environment: "{{ DUPLICITY_ENVIRONMENT }}"
