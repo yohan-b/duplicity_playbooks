@@ -222,6 +222,7 @@
       SECRETS_ARCHIVE_PASSPHRASE: "{{ lookup('env','SECRETS_ARCHIVE_PASSPHRASE') }}"
       DUPLICITY_PASSPHRASE: "{{ lookup('env','DUPLICITY_PASSPHRASE') }}"
       BACKUP_WORKFLOW: "{{ lookup('env','BACKUP_WORKFLOW') }}"
+      ANSIBLE_VERBOSITY: "{{ lookup('env','ANSIBLE_VERBOSITY') }}"
   remote_user: "{{ user }}"
   delegate_to: 172.17.0.1
   become: true
