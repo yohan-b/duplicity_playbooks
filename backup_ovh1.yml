@@ -29,5 +29,5 @@
     - name: Backup last MySQL dumps
       ansible.builtin.include_tasks: "tasks/backup_volume.yml"
       with_items:
-        - name: MySQL_DB
+        - name: mysql-server_dumps
           dir: "{{ WORKDIR }}/backup/MySQL_DB"
