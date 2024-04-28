@@ -27,21 +27,36 @@ BOOTSTRAP_REQUIRED_ENV_VARS:
   - BACKUP_WORKFLOW
 
 BACKUP_OVH1_VOLUMES:
-  - elasticsearch_data
-  - gogs_data
-  - mail_data
-  - nextcloud
-  - reverse-proxy_conf
-  - reverse-proxy_conf_enabled
-  - reverse-proxy_letsencrypt
-  - scuttle_code
-  - scuttle_php5-fpm_conf
-  - etc_grafana
-  - var_lib_grafana
-  - var_log_grafana
-  - registry_data
-  - registry_auth
-  - registry_certs
+  - name: elasticsearch_data
+    dir: /mnt/volumes/elasticsearch_data/data
+  - name: gogs_data
+    dir: /mnt/volumes/gogs_data/data
+  - name: mail_data
+    dir: /mnt/volumes/mail_data/data
+  - name: nextcloud
+    dir: /mnt/volumes/nextcloud/data
+  - name: reverse-proxy_conf
+    dir: /mnt/volumes/reverse-proxy_conf/data
+  - name: reverse-proxy_conf_enabled
+    dir: /mnt/volumes/reverse-proxy_conf_enabled/data
+  - name: reverse-proxy_letsencrypt
+    dir: /mnt/volumes/reverse-proxy_letsencrypt/data
+  - name: scuttle_code
+    dir: /mnt/volumes/scuttle_code/data
+  - name: scuttle_php5-fpm_conf
+    dir: /mnt/volumes/scuttle_php5-fpm_conf/data
+  - name: etc_grafana
+    dir: /mnt/volumes/etc_grafana/data
+  - name: var_lib_grafana
+    dir: /mnt/volumes/var_lib_grafana/data
+  - name: var_log_grafana
+    dir: /mnt/volumes/var_log_grafana/data
+  - name: registry_data
+    dir: /mnt/volumes/registry_data/data
+  - name: registry_auth
+    dir: /mnt/volumes/registry_auth/data
+  - name: registry_certs
+    dir: /mnt/volumes/registry_certs/data
 
 BACKUP_OVH1_REQUIRED_ENV_VARS:
   - OS_AUTH_URL

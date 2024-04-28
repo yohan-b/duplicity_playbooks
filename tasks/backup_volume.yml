@@ -1,25 +1,26 @@
 ---
-- name: Find hard links in /mnt/volumes/{{ item }}/data
-  ansible.builtin.command: "find '/mnt/volumes/{{ item }}/data' -type f -links +1"
+- name: Find hard links in {{ item.dir }}
+  ansible.builtin.command: "find '{{ item.dir }}' -type f -links +1"
   register: find_hard_links
 
 # Duplicity does not support hard links
-- name: Assert that there is no hard links in /mnt/volumes/{{ item }}/data
+- name: Assert that there is no hard links in {{ item.dir }}
   ansible.builtin.assert:
     that:
       - find_hard_links.stdout | length == 0
     msg: "Duplicity does not support hard links."
 
-- name: Create SWIFT bucket {{ item }}
+- name: Create SWIFT bucket {{ item.name }}
   openstack.cloud.object_container:
-    name: "{{ item }}"
+    name: "{{ item.name }}"
     state: present
   environment: "{{ DUPLICITY_ENVIRONMENT }}"
 
-- name: Backup /mnt/volumes/{{ item }}/data with duplicity
-  ansible.builtin.command: "duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir {{ ARCHIVE_DIR }} --name {{ item }} --allow-source-mismatch '/mnt/volumes/{{ item }}/data' swift://{{ item }}"
+- name: Backup {{ item.dir }} with duplicity
+  ansible.builtin.command: "duplicity --num-retries 3 --full-if-older-than 1M --progress --archive-dir {{ ARCHIVE_DIR }} --name {{ item.name }} --allow-source-mismatch '{{ item.dir }}' swift://{{ item.name }}"
   environment: "{{ DUPLICITY_ENVIRONMENT }}"
 
-- name: Clean old duplicity backups for {{ item }}
-  ansible.builtin.command: "duplicity remove-older-than 2M --archive-dir {{ ARCHIVE_DIR }} --name {{ item }} --allow-source-mismatch --force swift://{{ item }}"
+- name: Clean old duplicity backups for {{ item.name }}
+  ansible.builtin.command: "duplicity remove-older-than 2M --archive-dir {{ ARCHIVE_DIR }} --name {{ item.name }} --allow-source-mismatch --force swift://{{ item.name }}"
   environment: "{{ DUPLICITY_ENVIRONMENT }}"
+
