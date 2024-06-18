@@ -33,6 +33,8 @@ BACKUP_OVH1_VOLUMES:
     dir: /mnt/volumes/gogs_data/data
   - name: mail_data
     dir: /mnt/volumes/mail_data/data
+  - name: mail_data_Sylvie
+    dir: /mnt/volumes/mail_data_Sylvie/data
   - name: nextcloud
     dir: /mnt/volumes/nextcloud/data
   - name: reverse-proxy_conf
