@@ -26,7 +26,11 @@
       dir: /root/.ssh
     - name: secrets/docker-duplicity-stack/nextcloud_password.sh
       dir: /root
-    - name: secrets/bootstrap/openrc.sh
+
+- name: Extract secrets.yml from secrets.tar.gz.enc
+  shell: "openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in /root/secrets.tar.gz.enc | tar -zxv -C {{ item.dir }} --strip 1 {{ item.name }}"
+  with_items:
+    - name: secrets/secrets.yml
       dir: /root
 
 - name: Change SSH private key permissions
@@ -80,20 +84,8 @@
   delegate_to: 172.17.0.1
   become: true
 
-- name: Set OpenStack credentials
-  ansible.builtin.include_tasks: "tasks/source_vars.yml"
-  with_items:
-    - OS_AUTH_URL
-    - OS_IDENTITY_API_VERSION
-    - OS_USER_DOMAIN_NAME
-    - OS_PROJECT_DOMAIN_NAME
-    - OS_TENANT_ID
-    - OS_TENANT_NAME
-    - OS_USERNAME
-    - OS_PASSWORD
-    - OS_REGION_NAME
-  vars:
-    shell_script: /root/openrc.sh
+- name: Include secrets from yml db
+  ansible.builtin.include_vars: "/root/secrets.yml"
 
 - name: Setup volume
   ansible.builtin.include_tasks: "tasks/setup_volume.yml"
